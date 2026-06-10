@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riwayat Absensi - Web Absensi</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="riwayat.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Riwayat Absensi</h1>
+            <p class="subtitle">Pantau riwayat absensi dan statistik kehadiran</p>
+        </div>
+
+        <div class="navigation-tabs">
+            <button class="tab-btn active" data-tab="riwayat">
+                📊 Riwayat Absensi
+            </button>
+            <button class="tab-btn" data-tab="statistik">
+                📈 Statistik
+            </button>
+            <button class="tab-btn" data-tab="laporan">
+                📑 Laporan
+            </button>
+        </div>
+
+        <!-- TAB 1: RIWAYAT ABSENSI -->
+        <div class="tab-content" id="riwayat-tab">
+            <div class="filters-section">
+                <div class="filter-group">
+                    <input type="text" id="searchInput" placeholder="🔍 Cari nama atau email..." class="search-input">
+                    <input type="date" id="filterDate" class="filter-input">
+                    <select id="filterStatus" class="filter-input">
+                        <option value="">Semua Status</option>
+                        <option value="Hadir">✓ Hadir</option>
+                        <option value="Tidak Hadir">✗ Tidak Hadir</option>
+                        <option value="Izin">⏸️ Izin</option>
+                        <option value="Sakit">🤒 Sakit</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="resetFilters()">🔄 Reset Filter</button>
+                    <button class="btn btn-info" onclick="exportToCSV()">📥 Export CSV</button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="attendanceTable" class="attendance-table">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>ID</th>
+                            <th>Nama</th>
+                            <th>Email</th>
+                            <th>Tanggal</th>
+                            <th>Waktu Masuk</th>
+                            <th>Waktu Keluar</th>
+                            <th>Lokasi</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="10" class="loading">⏳ Memuat data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination">
+                <button id="prevBtn" class="btn btn-secondary" onclick="previousPage()">← Sebelumnya</button>
+                <span id="pageInfo" class="page-info">Halaman 1 dari 1</span>
+                <button id="nextBtn" class="btn btn-secondary" onclick="nextPage()">Selanjutnya →</button>
+            </div>
+        </div>
+
+        <!-- TAB 2: STATISTIK -->
+        <div class="tab-content" id="statistik-tab" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">✓</div>
+                    <div class="stat-content">
+                        <h3>Total Hadir</h3>
+                        <p class="stat-number" id="statHadir">0</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">✗</div>
+                    <div class="stat-content">
+                        <h3>Tidak Hadir</h3>
+                        <p class="stat-number" id="statTidakHadir">0</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">⏸️</div>
+                    <div class="stat-content">
+                        <h3>Izin</h3>
+                        <p class="stat-number" id="statIzin">0</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">🤒</div>
+                    <div class="stat-content">
+                        <h3>Sakit</h3>
+                        <p class="stat-number" id="statSakit">0</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-content">
+                        <h3>Total Absensi</h3>
+                        <p class="stat-number" id="statTotal">0</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <h3>Persentase Hadir</h3>
+                        <p class="stat-number" id="statPersentase">0%</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <div class="chart-card">
+                    <h3>📈 Grafik Kehadiran Harian</h3>
+                    <canvas id="dailyChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>🥧 Distribusi Status</h3>
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: LAPORAN -->
+        <div class="tab-content" id="laporan-tab" style="display: none;">
+            <div class="report-section">
+                <h3>📑 Buat Laporan Absensi</h3>
+                
+                <div class="report-filters">
+                    <div class="filter-group">
+                        <label>Periode Awal:</label>
+                        <input type="date" id="reportStartDate" class="filter-input">
+                    </div>
+                    <div class="filter-group">
+                        <label>Periode Akhir:</label>
+                        <input type="date" id="reportEndDate" class="filter-input">
+                    </div>
+                    <div class="filter-group">
+                        <label>Format Export:</label>
+                        <select id="reportFormat" class="filter-input">
+                            <option value="pdf">📄 PDF</option>
+                            <option value="excel">📊 Excel</option>
+                            <option value="csv">📋 CSV</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="generateReport()">📥 Generate Laporan</button>
+                </div>
+
+                <div class="report-preview" id="reportPreview" style="display: none;">
+                    <h4>Preview Laporan</h4>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Nama</th>
+                                <th>Email</th>
+                                <th>Hadir</th>
+                                <th>Tidak Hadir</th>
+                                <th>Izin</th>
+                                <th>Sakit</th>
+                                <th>Total</th>
+                                <th>Persentase</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-secondary" onclick="location.href='index.html'">← Kembali ke Scan Wajah</button>
+            <button class="btn btn-danger" onclick="clearAllData()" style="display: none;" id="clearBtn">🗑️ Hapus Semua Data</button>
+        </div>
+    </div>
+
+    <!-- Modal Detail Absensi -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📋 Detail Absensi</h3>
+                <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeDetailModal()">Tutup</button>
+                <button class="btn btn-danger" onclick="deleteAttendance()" id="deleteBtn">🗑️ Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Absensi -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ Edit Absensi</h3>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm" onsubmit="saveEdit(event)">
+                    <input type="hidden" id="editId">
+                    
+                    <div class="form-group">
+                        <label>Nama:</label>
+                        <input type="text" id="editNama" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Email:</label>
+                        <input type="email" id="editEmail" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Status:</label>
+                        <select id="editStatus" required>
+                            <option value="Hadir">✓ Hadir</option>
+                            <option value="Tidak Hadir">✗ Tidak Hadir</option>
+                            <option value="Izin">⏸️ Izin</option>
+                            <option value="Sakit">🤒 Sakit</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Catatan:</label>
+                        <textarea id="editCatatan" rows="4"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="riwayat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+</body>
+</html>
