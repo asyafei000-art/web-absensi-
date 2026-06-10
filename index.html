@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Scan Wajah - Web Absensi</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📹 Aplikasi Scan Wajah</h1>
+            <p class="subtitle">Deteksi wajah secara real-time melalui webcam Anda</p>
+        </div>
+
+        <div class="main-content">
+            <div class="video-container">
+                <video id="video" autoplay playsinline muted></video>
+                <canvas id="canvas"></canvas>
+                <div class="status-indicator" id="statusIndicator">
+                    <span class="status-dot"></span>
+                    <span id="statusText">Menunggu kamera...</span>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <div class="info-card">
+                    <h3>📊 Status Deteksi</h3>
+                    <div class="info-content">
+                        <p>Wajah Terdeteksi: <span id="faceCount" class="badge-primary">0</span></p>
+                        <p>Kualitas Deteksi: <span id="detectionQuality" class="badge-secondary">0%</span></p>
+                        <p>FPS: <span id="fps" class="badge-info">0</span></p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>ℹ️ Informasi Wajah</h3>
+                    <div class="info-content">
+                        <p>Posisi: <span id="facePosition">-</span></p>
+                        <p>Ukuran: <span id="faceSize">-</span></p>
+                        <p>Status: <span id="faceStatus" class="status-badge status-waiting">Menunggu</span></p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>🎯 Instruksi</h3>
+                    <div class="info-content instruction-list">
+                        <ul>
+                            <li>✓ Pastikan webcam dapat diakses</li>
+                            <li>✓ Hadapkan wajah ke depan kamera</li>
+                            <li>✓ Pencahayaan harus cukup terang</li>
+                            <li>✓ Sistem akan otomatis mendeteksi wajah</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" class="btn btn-primary">🎬 Mulai Kamera</button>
+            <button id="stopBtn" class="btn btn-danger" disabled>⏹️ Hentikan Kamera</button>
+            <button id="captureBtn" class="btn btn-success" disabled>📸 Tangkap Foto</button>
+            <button id="resetBtn" class="btn btn-secondary">🔄 Reset</button>
+        </div>
+
+        <div id="captureResult" class="capture-result" style="display: none;">
+            <h3>📸 Foto Tertangkap</h3>
+            <img id="capturedImage" src="" alt="Foto tertangkap">
+            <button class="btn btn-secondary" onclick="document.getElementById('captureResult').style.display = 'none';">Tutup</button>
+        </div>
+    </div>
+
+    <!-- Library Face Detection -->
+    <script async src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+    
+    <script src="script.js"></script>
+</body>
+</html>
