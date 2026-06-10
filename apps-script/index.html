@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aplikasi Scan Wajah Real-Time</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+  <style>
+    .video-container {
+      position: relative;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 10;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4 antialiased selection:bg-indigo-500/30">
+  <div class="max-w-md w-full bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 text-center border border-slate-800/60 transition-all duration-300 hover:border-slate-700/80">
+    <header class="mb-6">
+      <div class="inline-flex p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 mb-3 border border-indigo-500/20 animate-pulse">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+        </svg>
+      </div>
+      <h1 class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Face Scanner AI</h1>
+      <p class="text-slate-400 text-xs mt-1">Sistem Pemindai & Deteksi Wajah Real-Time</p>
+    </header>
+
+    <div class="video-container bg-slate-950 rounded-2xl overflow-hidden aspect-[4/3] flex items-center justify-center border border-slate-800 shadow-2xl group relative">
+      <video id="video" autoplay muted playsinline class="w-full h-full object-cover scale-x-[-1]"></video>
+      <div id="scanner-line" class="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_12px_rgba(34,211,238,0.8)] animate-[bounce_3s_infinite] z-20 pointer-events-none"></div>
+    </div>
+
+    <div class="mt-6 space-y-4">
+      <div>
+        <div id="status-badge" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 transition-all duration-300">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+          Memuat Model AI...
+        </div>
+      </div>
+      
+      <div class="bg-slate-950/40 rounded-2xl p-4 border border-slate-800/50 text-left">
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Log Informasi</span>
+        <p id="info-box" class="text-xs text-slate-400 leading-relaxed italic">Menyiapkan komponen browser...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const statusBadge = document.getElementById('status-badge');
+    const infoBox = document.getElementById('info-box');
+    const scannerLine = document.getElementById('scanner-line');
+    let canvas;
+
+    async function init() {
+      updateStatus('Memuat Model AI...', 'amber');
+      infoBox.textContent = 'Mengunduh model bobot kecerdasan buatan untuk deteksi wajah...';
+      try {
+        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+        updateStatus('Model Siap', 'blue');
+        infoBox.textContent = 'Model berhasil dimuat. Meminta izin akses kamera...';
+        startVideo();
+      } catch (error) {
+        console.error(error);
+        updateStatus('Gagal Memuat Model', 'red');
+        infoBox.innerHTML = '<span class="text-rose-400">Error: Koneksi internet terganggu atau CDN tidak dapat dijangkau.</span>';
+      }
+    }
+
+    function startVideo() {
+      navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 640 }, 
+          height: { ideal: 480 }, 
+          facingMode: 'user' 
+        } 
+      })
+      .then(stream => {
+        video.srcObject = stream;
+        updateStatus('Kamera Aktif', 'emerald');
+        infoBox.textContent = 'Kamera berhasil terhubung. Memulai pemindaian wajah secara real-time...';
+      })
+      .catch(err => {
+        console.error('Akses kamera ditolak:', err);
+        updateStatus('Akses Ditolak', 'red');
+        infoBox.innerHTML = '<span class="text-rose-400 font-semibold">Gagal Mengakses Kamera.</span> Pastikan Anda memberikan izin akses kamera (perizinan kamera) pada peramban web Anda.';
+      });
+    }
+
+    video.addEventListener('play', () => {
+      canvas = faceapi.createCanvasFromMedia(video);
+      document.querySelector('.video-container').append(canvas);
+      const displaySize = { width: video.clientWidth, height: video.clientHeight };
+      faceapi.matchDimensions(canvas, displaySize);
+      setInterval(async () => {
+        if (!video.paused && !video.ended) {
+          const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.4 }));
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          const resizedDetections = faceapi.resizeResults(detections, displaySize);
+          resizedDetections.forEach(detection => {
+            let { x, y, width, height } = detection.box;
+            x = displaySize.width - x - width;
+            ctx.strokeStyle = '#6366f1';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'rgba(99, 102, 241, 0.8)';
+            const len = Math.min(20, width * 0.2);
+            ctx.beginPath(); ctx.moveTo(x, y + len); ctx.lineTo(x, y); ctx.lineTo(x + len, y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x + width - len, y); ctx.lineTo(x + width, y); ctx.lineTo(x + width, y + len); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x, y + height - len); ctx.lineTo(x, y + height); ctx.lineTo(x + len, y + height); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x + width - len, y + height); ctx.lineTo(x + width, y + height); ctx.lineTo(x + width, y + height - len); ctx.stroke();
+          });
+          if (detections.length > 0) {
+            updateStatus('Wajah Terdeteksi', 'indigo');
+            scannerLine.style.display = 'none';
+            infoBox.innerHTML = `<span class="text-emerald-400 font-bold">✓ Sukses Terdeteksi!</span> Teridentifikasi <span class="font-bold text-white">${detections.length} wajah</span> pada frame aktif secara real-time.`;
+          } else {
+            updateStatus('Memindai Wajah...', 'emerald');
+            scannerLine.style.display = 'block';
+            infoBox.textContent = 'Memantau kamera... Posisikan wajah Anda tepat menghadap layar.';
+          }
+        }
+      }, 80);
+    });
+
+    function updateStatus(text, color) {
+      statusBadge.innerHTML = '';
+      const dot = document.createElement('span');
+      dot.className = 'w-2 h-2 rounded-full';
+      statusBadge.appendChild(dot);
+      const label = document.createTextNode(text);
+      statusBadge.appendChild(label);
+      statusBadge.className = 'inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold border transition-all duration-300';
+      if (color === 'amber') {
+        statusBadge.classList.add('bg-amber-500/10', 'text-amber-400', 'border-amber-500/20');
+        dot.classList.add('bg-amber-400', 'animate-ping');
+      } else if (color === 'blue') {
+        statusBadge.classList.add('bg-blue-500/10', 'text-blue-400', 'border-blue-500/20');
+        dot.classList.add('bg-blue-400', 'animate-pulse');
+      } else if (color === 'emerald') {
+        statusBadge.classList.add('bg-emerald-500/10', 'text-emerald-400', 'border-emerald-500/20');
+        dot.classList.add('bg-emerald-400', 'animate-pulse');
+      } else if (color === 'indigo') {
+        statusBadge.classList.add('bg-indigo-500', 'text-white', 'border-indigo-600');
+        dot.classList.add('bg-white', 'animate-ping');
+      } else if (color === 'red') {
+        statusBadge.classList.add('bg-rose-500/10', 'text-rose-400', 'border-rose-500/20');
+        dot.classList.add('bg-rose-500');
+      }
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
